@@ -80,6 +80,12 @@ def get_content(topic=None):
             if content:
                 return content
 
+    # Fallback: auto-discover new topics if all sources are exhausted
+    from scripts.scrapers.discover import get_next_discovered
+    content = get_next_discovered()
+    if content:
+        return content
+
     return None
 
 

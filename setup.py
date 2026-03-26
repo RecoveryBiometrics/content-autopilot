@@ -150,7 +150,33 @@ def step_podcast_info():
     print(f"\n  Got it: \"{name}\" — a podcast about {niche}.")
     print()
 
-    return {"PODCAST_NAME": name, "PODCAST_NICHE": niche}
+    print("  Who's your target audience? This helps the AI write content")
+    print("  that speaks directly to them.\n")
+    market = ask("Describe your audience (e.g., 'small business owners in the US', 'Indian real estate agents')", required=False)
+
+    config = {"PODCAST_NAME": name, "PODCAST_NICHE": niche}
+    if market:
+        config["TARGET_MARKET"] = market
+
+    print()
+    print("  Are there any Reddit communities where your audience hangs out?")
+    print("  The pipeline searches Reddit for real discussions to make content better.\n")
+    subreddits = ask("Subreddit names, comma-separated (e.g., 'realestateinvesting, landlords')", required=False)
+    if subreddits:
+        config["REDDIT_SUBREDDITS"] = subreddits
+
+    print()
+    print("  Any specific facts the pipeline should always check?")
+    print("  For example: 'Use INR not USD', 'Our product starts at $49/mo',")
+    print("  'WhatsApp not SMS for this market'\n")
+    rules = ask("Fact-check rules (or press Enter to skip)", required=False)
+    if rules:
+        config["FACT_CHECK_RULES"] = rules
+
+    print()
+    input("  Press Enter to continue...")
+
+    return config
 
 
 def step_content_source():
