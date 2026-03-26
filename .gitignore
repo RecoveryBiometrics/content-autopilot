@@ -1,0 +1,34 @@
+# Secrets & credentials — NEVER commit these
+.env
+*.env
+!.env.template
+token.json
+token-gsc.json
+credentials.json
+credentials-gsc.json
+client_secret*.json
+storage_state*.json
+
+# Claude / MCP
+.mcp.json
+.claude.json
+CLAUDE.md
+
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Data & logs
+data/articles/
+data/audio/
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Site build output
+site/public/
