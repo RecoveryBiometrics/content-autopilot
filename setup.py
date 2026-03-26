@@ -460,12 +460,128 @@ def step_blog():
             link = ask("Paste the full URL")
             config["AFFILIATE_LINK"] = link
 
+        # Design preferences
+        print()
+        print("  ─────────────────────────────────────")
+        print("  Now let's make it look like yours.")
+        print("  ─────────────────────────────────────")
+
+        print()
+        theme = ask_choice(
+            "Light or dark theme?",
+            [
+                {"label": "Dark — dark background, light text (modern, bold)", "value": "dark"},
+                {"label": "Light — white background, dark text (clean, classic)", "value": "light"},
+            ],
+        )
+        config["SITE_THEME"] = theme["value"]
+
+        print()
+        color = ask_choice(
+            "Pick an accent color (buttons, links, highlights):",
+            [
+                {"label": "Amber / Gold", "value": "#f59e0b"},
+                {"label": "Coral / Orange", "value": "#f97316"},
+                {"label": "Emerald / Green", "value": "#10b981"},
+                {"label": "Sky Blue", "value": "#0ea5e9"},
+                {"label": "Rose / Pink", "value": "#f43f5e"},
+                {"label": "Violet / Purple", "value": "#8b5cf6"},
+                {"label": "Custom — I'll type a hex code", "value": "custom"},
+            ],
+        )
+        if color["value"] == "custom":
+            print()
+            custom_color = ask("Hex color code (e.g., #ff6600)")
+            config["SITE_ACCENT_COLOR"] = custom_color
+        else:
+            config["SITE_ACCENT_COLOR"] = color["value"]
+
+        print()
+        font = ask_choice(
+            "Pick a font style:",
+            [
+                {"label": "DM Sans — clean and modern", "value": "DM Sans"},
+                {"label": "Inter — sharp and technical", "value": "Inter"},
+                {"label": "Lora — elegant and editorial", "value": "Lora"},
+                {"label": "Space Grotesk — bold and distinctive", "value": "Space Grotesk"},
+                {"label": "Merriweather — classic and readable", "value": "Merriweather"},
+            ],
+        )
+        config["SITE_FONT"] = font["value"]
+
+        print()
+        logo = ask("Path or URL to your logo image (or press Enter to skip)", required=False)
+        if logo:
+            config["SITE_LOGO"] = logo
+
         print()
         print("  Blog setup complete. After setup finishes, check DEPLOY.md")
         print("  for instructions on connecting your domain to Cloudflare Pages.\n")
 
     input("  Press Enter to continue...")
     return config
+
+
+def step_categories(config):
+    banner("Step 7b: Blog Categories")
+    print("  Good SEO needs organized content categories (topic silos).")
+    print("  These help Google understand what your site is about.\n")
+
+    if config.get("ENABLE_BLOG") != "true":
+        return {}
+
+    niche = config.get("PODCAST_NICHE", "")
+    if not niche:
+        return {}
+
+    # Suggest categories based on niche
+    print(f"  Based on your niche ({niche}), here are some suggested categories:\n")
+
+    # Generate suggestions without API (basic patterns that work for any niche)
+    suggestions = [
+        f"{niche} Basics",
+        f"{niche} Tips & Tricks",
+        f"{niche} Tools & Resources",
+        f"{niche} Case Studies",
+        f"{niche} Common Mistakes",
+        f"Advanced {niche}",
+        f"{niche} News & Trends",
+        f"{niche} FAQ",
+    ]
+
+    for i, cat in enumerate(suggestions, 1):
+        print(f"    {i}. {cat}")
+
+    print()
+    print("  You can use these, modify them, or write your own.")
+    print()
+
+    use_suggestions = ask_choice(
+        "What do you want to do?",
+        [
+            {"label": "Use these categories as-is", "value": "use"},
+            {"label": "I'll type my own categories", "value": "custom"},
+            {"label": "Skip — let the AI assign categories as it goes", "value": "skip"},
+        ],
+    )
+
+    if use_suggestions["value"] == "use":
+        categories = ",".join(suggestions)
+    elif use_suggestions["value"] == "custom":
+        print()
+        print("  Type your categories, separated by commas.")
+        print("  Example: Getting Started, Advanced Strategies, Tools, Industry News\n")
+        categories = ask("Your categories")
+    else:
+        categories = ""
+        print("\n  The AI will create categories based on the content it writes.")
+
+    if categories:
+        print(f"\n  Categories set: {categories}\n")
+
+    input("  Press Enter to continue...")
+
+    return {"SITE_CATEGORIES": categories}
 
 
 def step_email():
@@ -585,6 +701,14 @@ def step_summary(config):
     blog = "yes" if config.get("ENABLE_BLOG") == "true" else "no"
     print(f"    Blog site:      {blog}")
 
+    if blog == "yes":
+        print(f"    Theme:          {config.get('SITE_THEME', 'dark')}")
+        print(f"    Accent color:   {config.get('SITE_ACCENT_COLOR', '#f59e0b')}")
+        print(f"    Font:           {config.get('SITE_FONT', 'DM Sans')}")
+        categories = config.get("SITE_CATEGORIES", "")
+        if categories:
+            print(f"    Categories:     {categories[:60]}...")
+
     email = "yes" if config.get("ENABLE_EMAIL") == "true" else "no"
     print(f"    Daily emails:   {email}")
 
@@ -635,7 +759,7 @@ def main():
     step_welcome()
 
     # Run each step, merge results into config
-    steps = [
+    standard_steps = [
         step_podcast_info,
         step_content_source,
         step_notebooklm,
@@ -643,12 +767,24 @@ def main():
         step_claude,
         step_gemini,
         step_blog,
+    ]
+
+    for step in standard_steps:
+        result = step()
+        config.update(result)
+
+    # Categories step needs config context (niche, blog enabled)
+    result = step_categories(config)
+    config.update(result)
+
+    # Remaining steps
+    remaining_steps = [
         step_email,
         step_schedule,
         step_install_deps,
     ]
 
-    for step in steps:
+    for step in remaining_steps:
         result = step()
         config.update(result)
 
